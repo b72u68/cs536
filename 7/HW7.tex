@@ -1,0 +1,257 @@
+\documentclass{article}
+\usepackage[left=0.3in,right=0.3in,top=1in,bottom=1in]{geometry}
+\usepackage{amsmath, amsthm, amssymb, verbatim, enumerate}
+\usepackage{listings}
+\usepackage{fancyhdr}
+\usepackage{xcolor}
+\usepackage{forest}
+
+\newcommand{\z}{\mathbb{Z}}
+\newcommand{\stmt}[1]{\text{\sffamily #1}}
+\newcommand{\ifs}[3]{\stmt{if}\;#1\;\stmt{then}\;\{#2\}\;\stmt{else}\;\{#3\}}
+\newcommand{\while}[1]{\stmt{while}\;(#1)\;\{}
+\newcommand{\assign}[2]{#1 := #2}
+\newcommand{\const}[1]{\overline{#1}}
+\newcommand{\await}[2]{\stmt{await}\;(\ensuremath{#1})\;\stmt{then}\;\{#2\}}
+\newcommand{\inv}[1]{\{\textbf{inv}\;\ensuremath{#1}\}}
+\newcommand{\dec}[1]{\{\textbf{dec}\;\ensuremath{#1}\}}
+\newcommand{\havoc}[1]{\ensuremath{\stmt{havoc}\; #1}}
+\newcommand{\ands}{\stmt{\&\&}}
+\newcommand{\cond}[3]{\ensuremath{#1\,?\,#2\,:\,#3}}
+\newcommand{\skips}{\stmt{skip}}
+\renewcommand{\labelenumi}{\alph{enumi})}
+\newcommand{\wlp}[2]{\ensuremath{wlp(#1, #2)}}
+\newcommand{\hoare}[3]{\{\,\ensuremath{#1}\,\}\;\ensuremath{#2}\;\{\,\ensuremath{#3}\,\}}
+\newcommand{\wrapup}[2]{I spent about #1 hours on this homework, in total #2 hours of actual working time.}
+
+\newtheoremstyle{task}%
+    {}{}%
+    {\normalfont}{}%
+    {\bfseries}{\normalfont{.}}%
+    { }%
+    {\thmname{#1}\thmnumber{ #2}\thmnote{ (#3)}}
+
+\theoremstyle{task}
+\newtheorem{task}{Task}[section]
+
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{My Dinh}
+\lhead{CS536: Science of Programming}
+\cfoot{\thepage}
+
+\title{IIT CS536: Science of Programming\\
+  {\large Homework 7: Parallelism}}
+\author{My Dinh}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section{A simple parallel program}
+
+\begin{task}[Written, 4 points]
+\end{task}
+\begin{center}
+    \begin{tabular}{c | c | c | c | c}
+        i & j & Vars(j) & Change(i) & i interferes w/ j? \\
+        \hline
+        $s_1$ & $s_2$ & $i2, n, r2$ & $i1, r1$ & No \\
+        $s_2$ & $s_1$ & $i1, r1, n$ & $i2, r2$ & No \\
+    \end{tabular}
+\end{center}
+From the table above, we know that $s_1$ and $s_2$ are disjoint. Thus, $s$
+is a disjoint parallel program.
+
+\begin{task}[Written, 7 points]
+\end{task}
+\[
+    \begin{array}{l l}
+        & \{n \geq 0 \} \\
+        \assign{i1}{\const{0}}; & \\
+        \assign{r1}{\const{0}}; & \{n \geq 0 \wedge i1 = 0 \wedge r1 = 0\} \\
+        \inv{i1 \leq n/2 \wedge r1 = sum(0, i1)} & \\
+        \while{i1 < n/\const{2}} & \\
+        \quad \assign{r1}{r1 + i1}; & \\
+        \quad \assign{i1}{i1 + \const{1}} \\
+        \}; & \{r1 = sum(0, n/2)\} \\
+        \assign{i2}{n/\const{2}}; & \\
+        \assign{r2}{\const{0}}; & \{r1 = sum(0, n/2) \wedge i2 = n/2 \wedge r2 = 0\} \\
+        \inv{i2 \leq n \wedge r2 = sum(n/2, i2) \wedge r1 = sum(0, n/2)} & \\
+        \while{i2 < n} & \\
+        \quad \assign{r2}{r2 + i2}; & \\
+        \quad \assign{i2}{i2 + \const{1}}; & \\
+        \}; & \{r1 = sum(0, n/2) \wedge r2 = sum(n/2, n)\} \\
+            & \Rightarrow \{r1 + r2 = sum(0, n)\} \\
+        \assign{r}{r1 + r2} & \\
+        & \{r = sum(0, n)\}
+    \end{array}
+\]
+
+\begin{task}[Written, 11 points]
+\end{task}
+Before we can use \textbf{Par rule} to prove this program, we have to prove
+that thread $s_1$ and $s_2$ in this program have disjoint conditions.
+
+\begin{center}
+    \begin{tabular}{c | c | c | c | c | c | c}
+        i & j & Change(i) & Vars(j) & FV(j) & i interferes w/ j? & i interferes w/ cond j? \\
+        \hline
+        $s_1$ & $s_2$ & $r1, i1$ & $r2, i2, n$ & $r2, i2, n$ & No & No \\
+        $s_2$ & $s_1$ & $r2, i2$ & $i1, r1, n$ & $i1, r1, n$ & No & No \\
+    \end{tabular}
+\end{center}
+Thus, $s_1$ and $s_2$ have disjoint conditions.
+
+\[
+    \begin{array}{l l}
+        & \{n \geq 0 \} \\
+        \lbrack & \{p_1 \equiv n \geq 0\} \\
+        \assign{i1}{\const{0}}; & \\
+        \assign{r1}{\const{0}}; & \{n \geq 0 \wedge i1 = 0 \wedge r1 = 0\} \\
+        \inv{i1 \leq n/2 \wedge r1 = sum(0, i1)} & \\
+        \while{i1 < n/\const{2}} & \\
+        \quad \assign{r1}{r1 + i1}; & \\
+        \quad \assign{i1}{i1 + \const{1}} \\
+        \} & \{q_1 \equiv r1 = sum(0, n/2)\} \\
+        || & \{p_2 \equiv n \geq 0\} \\
+        \assign{i2}{n/\const{2}}; & \\
+        \assign{r2}{\const{0}}; & \{n \geq 0 \wedge i2 = n/2 \wedge r2 = 0\} \\
+        \inv{i2 \leq n \wedge r2 = sum(n/2, i2)} & \\
+        \while{i2 < n} & \\
+        \quad \assign{r2}{r2 + i2}; & \\
+        \quad \assign{i2}{i2 + \const{1}}; & \\
+        \} & \{q_2 \equiv r2 = sum(n/2, n)\} \\
+        \rbrack; & \{r_1 = sum(0, n/2) \wedge r_2 = sum(n/2, n)\} \Rightarrow \{r1 + r2 = sum(0, n)\} \\
+        \assign{r}{r1 + r2} & \\
+        & \{r = sum(0, n)\}
+    \end{array}
+\]
+
+\section{A More Realistic Parallel Program}
+
+\begin{task}[Written, 10 points]
+\end{task}
+Proof outline for $s_1$:
+\[
+    \begin{array}{l l}
+        & \{n \geq 0 \wedge i1 = 0 \wedge r1 = 0\} \\
+        \inv{i1 \leq n/2 \wedge r1 = sum(0, i1)} & \\
+        \while{i1 < n/\const{2}} & \{i1 < n/2 \wedge i1 \leq n/2 \wedge r1 = sum(0, i1)\} \Rightarrow \{i1 < n/2 \wedge r1 = sum(0, i1)\}\\
+        \quad < \assign{r1}{r1 + i1}; & \{i1 < n/2 \wedge r1 = sum(0, i1) + i1\} \Rightarrow \{i1+1 < n/2+1 \wedge r1 = sum(0, i1+1)\}\\
+        \quad \assign{i1}{i1 + \const{1}} > & \{i1 < n/2+1 \wedge r1 = sum(0, i1)\} \Rightarrow \{i1 \leq n/2 \wedge r1 = sum(0, i1)\}\\
+        \} & \{i1 \geq n/2 \wedge i \leq n/2 \wedge r1 = sum(0, i1)\} \\
+           & \Rightarrow \{r1 = sum(0, n/2)\}
+    \end{array}
+\]
+
+\vspace{1em}
+Proof outline for $s_2$:
+\[
+    \begin{array}{l l}
+        & \{0 \leq i1 \leq n/2 \wedge i2 = n/2 \wedge r1 = sum(0, i1) \wedge r2 = 0\} \\
+        \inv{i1 \leq n/2 \wedge i2 \leq n \wedge r1 = sum(0, i1) \wedge \\
+        \quad r2 = sum(n/2, i2)} & \\
+        \while{i2 < n} & \{i2 < n \wedge i1 \leq n/2 \wedge i2 \leq n \wedge r1 = sum(0, i1) \wedge r2 = sum(n/2, i2)\} \\
+                       & \Rightarrow \{i2 < n \wedge i1 \leq n/2 \wedge r1 = sum(0, i1) \wedge r2 = sum(n/2, i2)\} \\
+        \quad \assign{r2}{r2 + i2}; & \{i2 + 1 < n + 1 \wedge i1 \leq n/2 \wedge r1 = sum(0, i1) \wedge r2 = sum(n/2, i2+1)\} \\
+        \quad \assign{i2}{i2 + \const{1}} & \{i2 < n + 1 \wedge i1 \leq n/2 \wedge r1 = sum(0, i1) \wedge r2 = sum(n/2, i2)\} \\
+                                          & \Rightarrow \{i2 \leq n \wedge i1 \leq n/2 \wedge r1 = sum(0, i1) \wedge r2 = sum(n/2, i2)\} \\
+        \}; & \{i2 \geq n \wedge i2 \leq n \wedge i1 \leq n/2 \wedge r1 = sum(0, i1) \wedge r2 = sum(n/2, i2)\} \\
+            & \Rightarrow \{i1 \leq n/2 \wedge r1 = sum(0, i1) \wedge r2 = sum(n/2, n)\} \\
+        \inv{i1 \leq n/2 \wedge r1 = sum(0, i1) \wedge r2 = sum(n/2, n)} & \\
+        \while{i1 < n/\const{2}} \skips\}; & \{r1 = sum(0, n/2) \wedge r2 = sum(n/2, n)\} \\
+                                           & \Rightarrow \{r1 + r2 = sum(0, n)\} \\
+        \assign{r}{r1 + r2} & \{r1 + r2 = sum(0, n) \wedge r = r1 + r2\} \\
+                            & \Rightarrow \{r = sum(0, n)\}
+    \end{array}
+\]
+
+\pagebreak
+\begin{task}[Written, 6 points]
+\end{task}
+Because $s_1$ and $s_2$ are disjoint programs and have disjoint conditions
+so the proof $s_1*$ and $s_2*$ does not interfere with each other. We can
+see that proof $s_1*$ reads $i1, r1$, $n$  and writes $i1, r1$ that do not
+change the conditions and proof invariants in proof $s_2*$ (because the changes
+are kept in a critical section). And proof $s_2*$ reads $r1, i1, r2, i2, n$ and
+writes $s2, i2, r$ that do not interfere proof $s_1*$.
+
+\section{Even More Realistic with Await}
+
+\begin{task}[Written, 3 points]
+\end{task}
+\[
+    \begin{array}{l l}
+        \lbrack & \\
+        \while{i1 < n/\const{2}} & \\
+        \quad \langle \assign{r1}{r1 + i1}; & \\
+        \quad \assign{i1}{i1 + \const{1}} \rangle & \\
+        \} & \\
+        || & \\
+        \while{i2 < n} & \\
+        \quad \assign{r2}{r2 + i2}; & \\
+        \quad \assign{i2}{i2 + \const{1}} & \\
+        \}; & \\
+        \await{i1 \geq n/\const{2}}{\assign{r}{r1 + r2}} & \\
+        \rbrack &
+    \end{array}
+\]
+
+\begin{task}[Written, 2 points]
+\end{task}
+
+Because a $\stmt{while}$ loop might keep running in one thread that prevents
+other thread from running, which costs a lot of resources. It can also cause the
+program to diverge and make the total correctness of no longer hold. While
+$\stmt{await}$ check the condition, if it false then it will let other threads
+run. It only runs the statement when the condition is true.
+
+\section{A Buggy (and therefore even more realistic) Parallel Program}
+
+\begin{task}[Written, 7 points]
+\end{task}
+
+\begin{enumerate}
+    \item With the given precondition and initial state, program $s$ can execute
+        thread 2 until the end without having to wait for thread 1 to finish
+        to compute the final sum $r$. When it reaches $\stmt{while } i1 < n/\const{2}\;
+        \{\skips\}$ in thread 2, because thread 1 hasn't run yet, the value of
+        $i1 = 8285$ (from initial state $\sigma$) is larger than $n/2$ so the
+        program in thread 2 exits the loops. At this point, if thread 2 computes
+        $r = r1 + r2$ before thread 1 can end, the value of $r$ is either 524999
+        ($r = 523752 + sum(13, 26)$ for $r1 = 523752$ from state $\sigma$) or
+        from $sum(0, 0) + sum(13, 26)$ to $sum(0, 12) + sum(13, 26)$ (thread
+        2 interleaves to thread 1 then back to thread 2).
+
+    \item In hint 1 given in part a), there are 78 execution paths that will have
+        this behavior (incorrect paths). Thus, the expected number of times
+        we would have to run the program to find the bug in testing is
+        \begin{equation*}
+            \frac{\text{\# of possible execution paths}}{\text{\# of incorrect execution paths}}
+            = \frac{1.3 \times 10^{14}}{78} = 1.67 \times 10^{12} \text{ times}
+        \end{equation*}
+        The total time it would take to find one of the buggy execution described
+        in part a) is
+        \begin{equation*}
+            \frac{1.67 \times 10^{12}}{1000} = 1.67 \times 10^9 \text{ seconds} \approx 52.85 \text{ years}
+        \end{equation*}
+    \item The total time an user will encounter the bug, in expectation, is
+        \begin{equation*}
+            \frac{1.67 \times 10^{12}}{10^{11}} = 16.7 \text{ days}
+        \end{equation*}
+    \item Because program verification helps us make sure that our program will
+        work correctly as we've intended it to do and avoid possible errors in
+        the program. In the above example, without program verification, even
+        though the error/bug does not affect us right away, it might appear in
+        the future and cause the users and developers some troubles.
+\end{enumerate}
+
+\section{One more wrap-up question}
+
+\begin{task}[Written, 0 points]
+\end{task}
+\wrapup{3}{2}
+
+
+\end{document}

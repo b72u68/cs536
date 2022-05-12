@@ -1,0 +1,222 @@
+\documentclass{article}
+\usepackage[left=0.7in,right=0.7in,top=1in,bottom=1in]{geometry}
+\usepackage{amsmath, amsthm, amssymb, verbatim, enumerate}
+\usepackage{listings}
+\usepackage{fancyhdr}
+\usepackage{xcolor}
+\usepackage{forest}
+
+\newcommand{\z}{\mathbb{Z}}
+\newcommand{\stmt}[1]{\text{\sffamily #1}}
+\newcommand{\ifs}[3]{\stmt{if}\;#1\;\stmt{then}\;\{#2\}\;\stmt{else}\;\{#3\}}
+\newcommand{\while}[1]{\stmt{while}\;(#1)\;\{}
+\newcommand{\assign}[2]{#1 := #2}
+\newcommand{\const}[1]{\overline{#1}}
+\newcommand{\inv}[1]{\{\textbf{inv}\;\ensuremath{#1}\}}
+\newcommand{\dec}[1]{\{\textbf{dec}\;\ensuremath{#1}\}}
+\newcommand{\havoc}[1]{\ensuremath{\stmt{havoc}\; #1}}
+\newcommand{\ands}{\stmt{\&\&}}
+\newcommand{\cond}[3]{\ensuremath{#1\,?\,#2\,:\,#3}}
+\newcommand{\skips}{\stmt{skip}}
+\renewcommand{\labelenumi}{\alph{enumi})}
+\newcommand{\wlp}[2]{\ensuremath{wlp(#1, #2)}}
+\newcommand{\hoare}[3]{\{\,\ensuremath{#1}\,\}\;\ensuremath{#2}\;\{\,\ensuremath{#3}\,\}}
+\newcommand{\wrapup}[2]{I spent about #1 hours on this homework, in total #2 hours of actual working time.}
+
+\newtheoremstyle{task}%
+    {}{}%
+    {\normalfont}{}%
+    {\bfseries}{\normalfont{.}}%
+    { }%
+    {\thmname{#1}\thmnumber{ #2}\thmnote{ (#3)}}
+
+\theoremstyle{task}
+\newtheorem{task}{Task}[section]
+
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{My Dinh}
+\lhead{CS536: Science of Programming}
+\cfoot{\thepage}
+
+\title{IIT CS536: Science of Programming\\
+  {\large Homework 6: Loop Bounds, Nondeterminism, Prallelism}}
+\author{My Dinh}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section{Loop Bounds and Proof Outline}
+
+\begin{task}[Written, 10 points]\
+    \[
+        \begin{array}{l l}
+            & \{n > 0\} \\
+            \assign{i}{n}; & \\
+            \inv{i \geq 1 \wedge n > 0} & \\
+            \dec{i / 2} & \\
+            \while{i > 1} & \\
+            \quad \assign{i}{i\,/\,\const{2}} & \\
+            \} & \{n > 0 \wedge i = 1\} \\
+        \end{array}
+    \]
+\end{task}
+
+\begin{task}[Written, 8 points]\
+    \[
+        \begin{array}{l l}
+            & \{0 \leq i < |a| \wedge a[i] \geq 1\} \\
+            \assign{x}{\const{1}}; & \\
+            \assign{k}{\const{0}}; & \\
+            \inv{x = 2^k \wedge x \leq a[i]} & \\
+            \dec{a[i] - x} & \\
+            \while{x * 2 \leq a[i]} & \\
+            \quad \assign{k}{k + \const{1}}; & \\
+            \quad \assign{x}{x * \const{2}} & \\
+            \} & \{x = 2^k \wedge x \leq a[i] \wedge a[i] < 2^{k+1}\}
+        \end{array}
+    \]
+\end{task}
+
+\section{Nondeterminism}
+
+\begin{task}[Written, 8 points]\
+    \[
+        \begin{array}{c | c | c}
+            \text{states } \sigma & P_1 & P_2 \\
+            \hline
+            \sigma \vDash e_1 \wedge e_2 & \text{Executes } s_1 & \text{Nondeterministically executes } s_1 \text{ or } s_2 \\
+            \sigma \vDash e_1 \wedge \neg e_2 & \text{Executes } s_1 & \text{Executes } s_1 \\
+            \sigma \vDash \neg e_1 \wedge e_2 & \text{Executes } s_2 & \text{Executes } s_2 \\
+            \sigma \vDash \neg e_1 \wedge \neg e_2 & \text{Executes } s_2 & \text{Aborts with Runtime Error} \\
+        \end{array}
+    \]
+\end{task}
+
+\begin{task}[Written, 12 points]\
+    \begin{enumerate}
+        \item
+            $
+            \!
+            \begin{aligned}[t]
+                M(\havoc{i}; \assign{a[i]}{\const{1}}, \sigma) &= U_{\sigma' \in M(\havoc{i}, \sigma)} M(\assign{a[i]}{\const{1}}, \sigma') \\
+                                                               &= U_{\sigma' \in \{\sigma[i \mapsto n | n \in \z]\}} M(\assign{a[i]}{\const{1}}, \sigma') \\
+                                                               &= M(\assign{a[i]}{\const{1}}, \sigma[i \mapsto n | n \in \z]) \\
+                                                               &= \{\sigma[i \mapsto n | n \in [0, |a|)][a[i] \mapsto 1], \{\bot_e\}\}
+            \end{aligned}
+            $
+
+        \item $\{\{x = -10\}, \{x = 10\}, \{\bot_d\}\}$
+
+            Because $\assign{x}{x - \const{1}}$ might be chosen to execute until
+            $x = -10$ and terminate the loop. Or $\assign{x}{x + \const{1}}$ might
+            be chosen to execute until $x = 10$ and terminate the loop. Or
+            $\assign{x}{x - \const{1}}$ and $\assign{x}{x + \const{1}}$ are
+            chosen to execute so that $x$ value always stays between -10 and 10
+            and an infinite loop (divergence) would occur.
+        \item
+            $
+            \!
+            \begin{aligned}[t]
+                &M((\stmt{branch}\:\{x \geq y \rightarrow \assign{x}{x - \const{2}} \;\square\;
+                y \geq x \rightarrow \assign{y}{y + \const{1}}\}); \ifs{x < y}{\assign{z}{y}}{\assign{z}{x}},
+                \{x = 3, y = 3\}) \\
+                =\:& U_{\sigma' \in M(\stmt{branch}\:\{x \geq y \rightarrow \assign{x}{x - \const{2}}
+                \;\square\;y \geq x \rightarrow \assign{y}{y + \const{1}}\}, \{x = 3, y = 3\})}
+                M(\ifs{x < y}{\assign{z}{y}}{\assign{z}{x}}, \sigma') \\
+                =\:& U_{\sigma' \in \{\{x = 1, y = 3\}, \{x = 3, y = 4\}\}}
+                M(\ifs{x < y}{\assign{z}{y}}{\assign{z}{x}}, \sigma') \\
+                =\:& M(\ifs{x < y}{\assign{z}{y}}{\assign{z}{x}}, \{x = 1, y = 3\})
+                \cup M(\ifs{x < y}{\assign{z}{y}}{\assign{z}{x}}, \{x = 3, y = 4\}) \\
+                =\:& M(\assign{z}{y}, \{x = 1, y = 3\}) \cup M(\assign{z}{y}, \{x = 3, y = 4\}) \\
+                =\:& \{\{x = 1, y = 3, z = 3\}, \{x = 3, y = 4, y = 4\}\}
+            \end{aligned}
+            $
+    \end{enumerate}
+\end{task}
+
+\begin{task}[Written, 12 points]\
+    \begin{enumerate}
+        \item
+            $
+            \!
+            \begin{aligned}[t]
+                &wlp(\stmt{branch}\: \{x \geq y \rightarrow \assign{max}{x} \;\square\; y \geq x \rightarrow \assign{max}{y}\}, max \geq 0) \\
+                =\:& (x \geq y \rightarrow wlp(\assign{max}{x}, max \geq 0)) \wedge (y \geq x \rightarrow wlp(\assign{max}{y}, max \geq 0)) \\
+                =\:& (x \geq y \rightarrow x \geq 0) \wedge (y \geq x \rightarrow y \geq 0)
+            \end{aligned}
+            $
+        \item
+            $
+            \!
+            \begin{aligned}[t]
+                &sp(x \geq y, \stmt{branch}\: \{x \geq y \rightarrow \assign{y}{y + \const{1}} \;\square\; y \geq x \rightarrow \assign{x}{x + \const{1}}\}) \\
+                =\:& sp(x \geq y \wedge x \geq y, \assign{y}{y + \const{1}}) \vee sp(x \geq y \wedge y \geq x, \assign{x}{x + \const{1}}) \\
+                =\:& sp(x \geq y, \assign{y}{y + \const{1}}) \vee sp(x = y, \assign{x}{x + \const{1}}) \\
+                =\:& (x \geq y_0 \wedge y = y_0 + 1) \vee (y = x_0 \wedge x = x_0 + 1)
+            \end{aligned}
+            $
+        \item
+            $
+            \!
+            \begin{aligned}[t]
+                wlp(\havoc{x}; \assign{y}{y + \const{1}}, y \geq \frac{x}{|x|}) &= wlp(\havoc{x}, wlp(\assign{y}{y + \const{1}}, y \geq \frac{x}{|x|})) \\
+                                                                                &= wlp(\havoc{x}, y + 1 \geq \frac{x}{|x|}) \\
+                                                                                &= \forall x_0 \in \z. y + 1 \geq \frac{x_0}{|x_0|}
+            \end{aligned}
+            $
+    \end{enumerate}
+\end{task}
+
+\section{Parallel Programs}
+
+\begin{task}[Written, 10 points]\
+    \begin{enumerate}
+        \item Evaluation graph for $\langle[\assign{y}{x/\const{3}} || \assign{x}{x + \const{6}}; \assign{z}{x * \const{2}}], \{x = 18\}\rangle$:
+
+            \begin{center}
+                \begin{forest}
+                    for tree = {edge={->}}
+                    [$\langle {[\assign{y}{x/\const{3}} || \assign{x}{x + \const{6}}; \assign{z}{x * \const{2}}]}{,} \{x {=} 18\} \rangle$
+                        [$\langle {[\stmt{skip} || \assign{x}{x + \const{6}}; \assign{z}{x * \const{2}}]}{,} \{x {=} 18{,}\: y {=} 6\} \rangle$
+                            [$\langle {[\stmt{skip} || \stmt{skip}; \assign{z}{x * \const{2}}]}{,} \{x {=} 24{,}\: y {=} 6\} \rangle$
+                                [$\langle {[\stmt{skip} || \assign{z}{x * \const{2}}]}{,} \{x {=} 24{,}\: y {=} 6\} \rangle$
+                                    [$\langle {[\stmt{skip} || \stmt{skip}]}{,} \{x {=} 24{,}\: y {=} 6{,}\: z {=} 48\} \rangle$
+                                        [$\{x {=} 24{,}\: y {=} 6{,}\: z {=} 48\}$]
+                                    ]
+                                ]
+                            ]
+                        ]
+                        [$\langle {[\assign{y}{x/\const{3}} || \stmt{skip}; \assign{z}{x * \const{2}}]}{,} \{x {=} 24\} \rangle$
+                            [$\langle {[\assign{y}{x/\const{3}} || \assign{z}{x * \const{2}}]}{,} \{x {=} 24\} \rangle$
+                                [$\langle {[\stmt{skip} || \assign{z}{x * \const{2}}]}{,} \{x {=} 24{,}\: y {=} 8\} \rangle$
+                                    [$\langle {[\stmt{skip} || \stmt{skip}]}{,} \{x {=} 24{,}\: y {=} 8{,}\: z {=} 48\} \rangle$
+                                        [$\{x {=} 24{,}\: y {=} 8{,}\: z {=} 48\}$]
+                                    ]
+                                ]
+                                [$\langle {[\assign{y}{x/\const{3}} || \stmt{skip}]}{,} \{x {=} 24{,}\: z {=} 48\} \rangle$
+                                    [$\langle {[\stmt{skip} || \stmt{skip}]}{,} \{x {=} 24{,}\: z {=} 48{,} y {=} 8\} \rangle$
+                                        [$\{x {=} 24{,}\: z {=} 48{,}\: y {=} 8\}$]
+                                    ]
+                                ]
+                            ]
+                        ]
+                    ]
+                \end{forest}
+            \end{center}
+        \item $\{\{x = 24, y = 6, z = 48\}, \{x = 24, y = 8, z = 48\}\}$
+
+            Because from the evaluation graph in part (a), the different states
+            that the program can be evaluated to are $\{x = 24, y = 6, z = 48\}$
+            and $\{x = 24, y = 8, z = 48\}$.
+    \end{enumerate}
+\end{task}
+
+\section{One more wrap-up question}
+
+\begin{task}[Written, 8 points]\ \\
+    \wrapup{3}{1.5}
+\end{task}
+
+\end{document}

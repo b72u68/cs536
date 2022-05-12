@@ -1,0 +1,167 @@
+\documentclass{article}
+\usepackage[left=0.6in,right=0.6in,top=0.6in,bottom=0.6in]{geometry}
+\usepackage{amsmath, amsthm, amssymb, verbatim, enumerate}
+\usepackage{listings}
+\usepackage{fancyhdr}
+
+\newcommand{\Z}{\mathbb{Z}}
+\newcommand{\stmt}[1]{\text{\sffamily #1}}
+\newcommand{\ifs}[3]{\stmt{if}\;#1\;\stmt{then}\;\{#2\}\;\stmt{else}\;\{#3\}}
+\newcommand{\skips}{\stmt{skip}}
+\renewcommand{\labelenumi}{\alph{enumi})}
+\newcommand{\hoare}[3]{\{\,\ensuremath{#1}\,\}\;\ensuremath{#2}\;\{\,\ensuremath{#3}\,\}}
+\newcommand{\wrapup}[2]{I spent about #1 hours on this homework, in total #2 hours of actual working time.}
+
+\newtheoremstyle{task}%
+    {}{}%
+    {\normalfont}{}%
+    {\bfseries}{\normalfont{.}}%
+    { }%
+    {\thmname{#1}\thmnumber{ #2}\thmnote{ (#3)}}
+
+\theoremstyle{task}
+\newtheorem{task}{Task}[section]
+
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{My Dinh}
+\lhead{CS CS536: Science of Programming}
+\cfoot{\thepage}
+
+\title{IIT CS536: Science of Programming\\
+  {\large Homework 4: Proofs, WP and SP}}
+\author{My Dinh}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section{Substitution}
+
+\begin{task}[Written, 8 points]\
+    \begin{enumerate}
+        \item $[y+x/x](2x + y \geq z) = 2(y + x) + y \geq z$
+        \item
+            $
+            \!
+            \begin{aligned}[t]
+                [z/x](x \geq 0 \rightarrow (\forall x. x * z > y) \wedge x > -1)
+                &= [z/x](x \geq 0 \rightarrow (\forall i.i * z > y) \wedge x > -1) \\
+                &= z \geq 0 \rightarrow (\forall i.i * z > y) \wedge z > -1
+            \end{aligned}
+            $
+        \item
+            $
+            \!
+            \begin{aligned}[t]
+                [x/y]\forall x. (y > 0 \rightarrow \exists y. y = x)
+                &= [x/y]\forall i. (y > 0 \rightarrow \exists y. y = i) \\
+                &= [x/y]\forall i. (y > 0 \rightarrow \exists j. j = i) \\
+                &= \forall i. (x > 0 \rightarrow \exists j. j = i)
+            \end{aligned}
+            $
+        \item $
+            \begin{aligned}[t]
+                [x + 2/y]\exists x. \forall y. x > y &= [x + 2/y]\exists i. \forall y. i > y \\
+                                                     &= [x + 2/y]\exists i. \forall j. i > j \\
+                                                     &= \exists i. \forall j. i > j
+            \end{aligned}
+            $
+    \end{enumerate}
+\end{task}
+
+\section{Proofs and Proof Outlines}
+
+\begin{task}[Written, 10 points]\ \\
+    Proof outline for \hoare{x \neq y}{\ifs{y > x}{t := x; x := y; y := t}{\skips}}{x > y}
+    \[
+        \begin{array}{l l}
+            \{x \neq y\} & \\
+            \stmt{if} (y > x)\;\{ &\{x \neq y \wedge y > x\} \Rightarrow \{y > x\} \\
+            \quad t := x; &\{y > x \wedge t = x\} \Rightarrow \{y > t\} \\
+            \quad x := y; &\{y > t \wedge x = y\} \Rightarrow \{x > t\} \\
+            \quad y := t &\{x > t \wedge y = t\} \Rightarrow \{x > y\} \\
+            \}\;\stmt{else}\;\{ &\{x \neq y \wedge y \leq x\} \Rightarrow \{x > y\} \\
+            \quad\skips &\{x > y\} \\
+            \} &\{x > y\}
+        \end{array}
+    \]
+\end{task}
+
+\begin{task}[Written, 7 points]\
+    \begin{enumerate}[1.]
+        \item \hoare{x = 0 \wedge 0 = 0}{s := \overline{0}}{x = 0 \wedge s = 0} \quad Assign
+        \item \hoare{T \wedge x = 0}{s := \overline{0}}{x = 0 \wedge s = 0} \quad Weaken 1
+        \item \hoare{x < 0 \wedge -1 = -1}{s := \overline{-1}}{x < 0 \wedge s = -1} \quad Assign
+        \item \hoare{x < 0 \wedge -1 = -1}{s := \overline{-1}}{s = \frac{x}{|x|}} \quad Weaken 3
+        \item \hoare{x \neq 0 \wedge x < 0}{s := \overline{-1}}{s = \frac{x}{|x|}} \quad Weaken 4
+        \item \hoare{x > 0 \wedge 1 = 1}{s := \overline{1}}{x > 0 \wedge s = 1} \quad Assign
+        \item \hoare{x \neq 0 \wedge x \geq 0}{s := \overline{1}}{x > 0 \wedge s = 1} \quad Weaken 6
+        \item \hoare{x \neq 0 \wedge x \geq 0}{s := \overline{1}}{s = \frac{x}{|x|}} \quad Weaken 7
+        \item \hoare{x \neq 0}{\ifs{x < 0}{s := \overline{-1}}{s := \overline{1}}}{s = \frac{x}{|x|}} \quad If 5, 8
+        \item \hoare{T \wedge x \neq 0}{\ifs{x < 0}{s := \overline{-1}}{s := \overline{1}}}{s := \frac{x}{|x|}} \quad Weaken 9
+        \item \hoare{T}{\ifs{x = \overline{0}}{s := \overline{0}}{\ifs{x < 0}{s := \overline{-1}}{s := \overline{1}}}}{(x = 0 \wedge s = 0) \vee s = \frac{x}{|x|}}
+            \quad If 2, 10
+    \end{enumerate}
+\end{task}
+
+\section{Weakest Preconditions and Strongest Postconditions}
+
+\begin{task}[Written, 15 points]\
+    \begin{enumerate}
+        \item $wlp(x := x + y; n := x * z, n = 0)$
+            \begin{align*}
+                &wlp(x := x + y; n := x * z, n = 0) \\
+                =& wlp(x := x + y, wlp(n := x * z, n = 0)) \\
+                =& wlp(x := x + y, [x * z/n](n = 0)) \\
+                =& wlp(x := x + y, x * z = 0) \\
+                =& [x + y/x](x * z = 0) \\
+                =& ((x + y) * z = 0)
+            \end{align*}
+        \item $wp(\ifs{x = y}{z := \overline{1}}{z := x/y}, z = 1)$
+            \begin{align*}
+                &wp(\ifs{x = y}{z := \overline{1}}{z := x/y}, z = 1) \\
+                =& (x = y \rightarrow wlp(z := \overline{1}, z = 1)) \wedge
+                (x \neq y \rightarrow wlp(z := x/y, z = 1)) \wedge
+                D(\ifs{x = y}{z := \overline{1}}{z := \overline{x/y}})\\
+                =& (x = y \rightarrow [1/z](z = 1)) \wedge
+                (x \neq y \rightarrow [(x/y)/z](z = 1)) \wedge
+                D(x = y) \wedge (x = y \rightarrow D(z := \overline{1})) \wedge (x \neq y \rightarrow D(z := x/y)) \\
+                =& (x = y \rightarrow 1 = 1) \wedge (x \neq y \rightarrow x/y = 1) \wedge
+                D(x) \wedge D(y) \wedge (x = y \rightarrow D(\overline{1})) \wedge
+                (x \neq y \rightarrow D(x/y)) \\
+                =& (x = y \rightarrow T) \wedge (x \neq y \rightarrow x/y = 1) \wedge
+                T \wedge T \wedge (x = y \rightarrow T) \wedge (x \neq y \rightarrow D(x) \wedge D(y) \wedge y \neq 0) \\
+                =& (x = y \rightarrow T) \wedge (x \neq y \rightarrow x/y = 1) \wedge
+                (x \neq y \rightarrow T \wedge T \wedge y \neq 0) \\
+                =& (x = y \rightarrow T) \wedge (x \neq y \rightarrow x/y = 1) \wedge
+                (x \neq y \rightarrow y \neq 0)
+            \end{align*}
+        \item $sp(x = 1, \ifs{y > 0}{x := x + 1}{\skips})$
+            \begin{align*}
+                &sp(x = 1, \ifs{y > 0}{x := x + 1}{\skips}) \\
+                =& (y > 0 \rightarrow sp(x = 1, x := x + 1)) \vee (y \leq 0 \rightarrow sp(x = 1, \skips)) \\
+                =& (y > 0 \rightarrow [x_0/x](x = 1) \wedge x = [x_0/x](x + 1)) \vee (y \leq 0 \rightarrow x = 1) \\
+                =& (y > 0 \rightarrow x_0 = 1 \wedge x = x_0 + 1) \vee (y \leq 0 \rightarrow x = 1) \\
+                =& (y > 0 \rightarrow x = 2) \vee (y \leq 0 \rightarrow x = 1)
+            \end{align*}
+        \item $sp(x \geq 0, x := 1; \ifs{x > 0}{x := x - 1}{x := 0})$
+            \begin{align*}
+                &sp(x \geq 0, x := 1; \ifs{x > 0}{x := x - 1}{x := 0}) \\
+                =& sp(sp(x \geq 0, x := 1), \ifs{x > 0}{x := x - 1}{x := 0})) \\
+                =& sp(x_0 \geq 0 \wedge x = 1, \ifs{x > 0}{x := x - 1}{x := 0})) \\
+                =& sp(x = 1, \ifs{x > 0}{x := x - 1}{x := 0})) \\
+                =& (x > 0 \rightarrow sp(x = 1, x := x - 1)) \vee (x \leq 0 \rightarrow sp(x = 1, x := 0)) \\
+                =& (x > 0 \rightarrow x_0 = 1 \wedge x = x_0 - 1) \vee (x \leq 0 \rightarrow x_0 = 1 \wedge x = 0) \\
+                =& (x > 0 \rightarrow x = 0) \vee (x \leq 0 \rightarrow x = 0)
+            \end{align*}
+    \end{enumerate}
+\end{task}
+
+\section{One more wrap-up question}
+
+\begin{task}[Written, 0 points]\ \\
+    \wrapup{5}{1-2}
+\end{task}
+
+\end{document}

@@ -1,0 +1,146 @@
+\documentclass{article}
+\usepackage[left=1in,right=1in,top=1in,bottom=1in]{geometry}
+\usepackage{amsmath, amsthm, amssymb, verbatim, enumerate}
+\usepackage{listings}
+\usepackage{fancyhdr}
+\usepackage{xcolor}
+
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{My Dinh}
+\lhead{CS CS536: Science of Programming}
+\cfoot{\thepage}
+
+\newcommand{\pdot}{\: . \:}
+\newcommand{\prog}[2]{\langle #1, #2 \rangle}
+\newcommand{\trplpc}[3]{$\{#1\}$ $#2$ $\{#3\}$}
+\newcommand{\trpltc}[3]{$[\;#1\;]$ $#2$ $[\;#3\;]$}
+\newcommand{\Z}{\mathbb{Z}}
+\renewcommand{\labelenumi}{\alph{enumi})}
+\renewcommand{\thesubsubsection}{Task \thesection.\arabic{subsubsection}}
+
+\lstset{
+    basicstyle=\ttfamily,
+    showstringspaces=false,
+    commentstyle=\color{gray},
+    keywordstyle=\color{blue}
+}
+
+\title{IIT CS536: Science of Programming\\
+  {\large Homework 3: Statements, Semantics, Errors and Hoare Triples}}
+\author{My Dinh}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section{Statement Syntax}
+
+\subsubsection{(Written, 8 points)}
+
+\begin{center}
+    \begin{lstlisting}[language=Python]
+    x:=0;
+    i:=0;
+    while(i<size(a)){
+        x:=x+a[i];
+        i:=i+1
+    }
+    \end{lstlisting}
+\end{center}
+
+\section{Semantics}
+
+\subsubsection{(Written, 10 points)}
+
+\begin{enumerate}
+    \item Steps of evaluation
+        \begin{center}
+            \begin{tabular}{r l}
+                                    &$\prog{s}{\{n = 5\}}$ \\
+                $\rightarrow$       &$\prog{b;s}{\{n = 5\}}$ \\
+                $\rightarrow$       &$\prog{n := 3 * n + 1; s}{\{n = 5\}}$ \\
+                $\rightarrow^2$     &$\prog{s}{\{n = 16\}}$ \\
+                $\rightarrow^2$     &$\prog{n := n / 2; s}{\{n = 16\}}$ \\
+                $\rightarrow^2$     &$\prog{s}{\{n = 8\}}$ \\
+                $\rightarrow^2$     &$\prog{n := n / 2; s}{\{n = 8\}}$ \\
+                $\rightarrow^2$     &$\prog{s}{\{n = 4\}}$ \\
+                $\rightarrow^2$     &$\prog{n := n / 2; s}{\{n = 4\}}$ \\
+                $\rightarrow^2$     &$\prog{s}{\{n = 2\}}$ \\
+                $\rightarrow^2$     &$\prog{n := n / 2; s}{\{n = 2\}}$ \\
+                $\rightarrow^2$     &$\prog{s}{\{n = 1\}}$ \\
+                $\rightarrow$       &$\prog{skip}{\{n = 1\}}$ \\
+            \end{tabular}
+        \end{center}
+
+    \item $M(s, \sigma)$ is $\Sigma_5 = \{\{ n = 1\}\}$.
+\end{enumerate}
+
+\subsubsection{(Written, 12 points)}
+
+\begin{enumerate}
+    \item $\{\bot_d\}$
+    \item $\Sigma_3 = \{\{n = 0\}\}$
+    \item $\{n = -1\}$
+    \item $\{x = 1, a = [0, 3, 2, 1], y = 3\}$
+    \item $\{x = -1, a = [0, 3, 2, 1], z = 0\}$
+    \item $\{\bot_e\}$
+\end{enumerate}
+
+\section{Hoare triples}
+
+\subsubsection{(Written, 16 points)}
+
+\begin{enumerate}
+    \item Unsatisfied.\\
+        Because the the final state $\{i = 0, x = 6\}$ does not satisfy $i > 0$.
+    \item Satisfied.\\
+        Because the starting state $\{i = 3, x = 1\}$ satisfies $i > 0$ and the
+        program terminates then the final state $\{i = 0, x = 6\}$ satisfies
+        $i \geq 0 \wedge x \geq 1$.
+    \item Satisfied.\\
+        Because the starting state $\{i = 3, x = 1\}$ satisfies $i > 0$, then the
+        program terminates and the final state $\{i = 0, x = 6\}$ satisfies
+        $i \geq 0 \wedge x \geq 1$.
+    \item Satisfied.\\
+        Because the starting state $\{i = -1, x = 1\}$ does not satisfy $i > 0$
+        (a contradiction).
+    \item Satisfied.\\
+        Because the starting state $\{i = -1, x = 1\}$ does not satisfy $i > 0$
+        (a contradiction).
+    \item Unsatisfied.\\
+        Because the final state $\{i = 0, x = 0\}$ does not satisfy
+        $i \geq 0 \wedge x \geq 1$.
+    \item Unsatisfied.\\
+        Because the final state $\{i = 0, x = 6\}$ does not satisfy $x = i!$.
+    \item Satisfied.\\
+        Because the starting state $\{i = 3, x = 1, k = 3\}$ satisfies $i > 0 \wedge
+        i = k$ and the program terminates then the final state $\{i = 0, x = 6, k = 3\}$
+        satisfies $x = k!$.
+\end{enumerate}
+
+\subsubsection{(Written, 12 points)}
+
+\begin{enumerate}
+    \item Valid
+    \item Invalid. Fix precondition: \trpltc{x \geq 0 \wedge y > 0}{z := x/y}{z \geq 0}.
+    \item Valid
+    \item Invalid. Fix precondition: \trplpc{i \geq 0 \wedge |a| > i \wedge (\forall i.(0 \leq i \wedge i < |a|) \rightarrow a[i] \geq 0)}{x := a[i]}{x \geq 0}.
+\end{enumerate}
+
+\subsubsection{(Written, 7 points)}
+
+The triple is
+
+\begin{center}
+    \trpltc{n \geq 0 \wedge ((n = 2k \wedge r = 1) \vee (n = 2k + 1 \wedge r = -1))}{m := n; \text{\sffamily while } n \neq 0 \: \{r := r * -2; n := n - 1\}}{r = 2^m}
+\end{center}
+
+\section{One more wrap-up question}
+
+\subsubsection{(Written, 0 points)}
+
+I spent about 2 to 3 hours on this homework, in total of 1 hour of actual working
+time.
+
+\end{document}

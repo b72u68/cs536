@@ -1,0 +1,218 @@
+\documentclass{article}
+\usepackage[left=0.9in,right=0.9in,top=1in,bottom=1in]{geometry}
+\usepackage{amsmath, amsthm, amssymb, verbatim, enumerate}
+\usepackage{listings}
+\usepackage{fancyhdr}
+\usepackage{xcolor}
+\usepackage{dafny}
+
+\newcommand{\stmt}[1]{\text{\sffamily #1}}
+\newcommand{\ifs}[3]{\stmt{if}\;#1\;\stmt{then}\;\{#2\}\;\stmt{else}\;\{#3\}}
+\newcommand{\whiles}[1]{\stmt{while}\;(#1)\;\{}
+\newcommand{\assigns}[2]{#1 := #2}
+\newcommand{\consts}[1]{\overline{#1}}
+\newcommand{\inv}[1]{\{\textbf{inv}\;\ensuremath{#1}\}}
+\newcommand{\ands}{\stmt{\&\&}}
+\newcommand{\cond}[3]{\ensuremath{#1\,?\,#2\,:\,#3}}
+\newcommand{\skips}{\stmt{skip}}
+\renewcommand{\labelenumi}{\alph{enumi})}
+\newcommand{\wlp}[2]{\ensuremath{wlp(#1, #2)}}
+\newcommand{\hoare}[3]{\{\,\ensuremath{#1}\,\}\;\ensuremath{#2}\;\{\,\ensuremath{#3}\,\}}
+\newcommand{\wrapup}[2]{I spent about #1 hours on this homework, in total #2 hours of actual working time.}
+
+\lstset{
+    language=dafny,
+    basicstyle=\small\ttfamily,
+    showstringspaces=false,
+    commentstyle=\color{gray},
+    keywordstyle=\color{blue},
+    rulecolor=\color{gray},
+    numbers=left,
+    numberstyle=\footnotesize\ttfamily\color{gray},
+    firstnumber=1,
+    stepnumber=1
+}
+
+\newtheoremstyle{task}%
+    {}{}%
+    {\normalfont}{}%
+    {\bfseries}{\normalfont{.}}%
+    { }%
+    {\thmname{#1}\thmnumber{ #2}\thmnote{ (#3)}}
+
+\theoremstyle{task}
+\newtheorem{task}{Task}[section]
+
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{My Dinh}
+\lhead{CS536: Science of Programming}
+\cfoot{\thepage}
+
+\title{IIT CS536: Science of Programming\\
+  {\large Proofs, Loop Invariants}}
+\author{My Dinh}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section{Minimal and Full Proof Outlines}
+
+\begin{task}[Written, 7 points]
+    \[
+        \begin{array}{l l}
+            & \{n \leq 0\} \\
+            \assigns{i}{\consts{0}}; & \{n \leq 0\ \wedge i = 0\} \\
+            \assigns{s}{\consts{0}}; & \{n \leq 0 \wedge i = 0 \wedge s = 0\} \\
+            \inv{i \leq n \wedge s = i^2} & \\
+            \stmt{while} \; (i < n) \{ & \{i < n \wedge i \leq n \wedge s = i^2\} \Rightarrow \{i < n \wedge s = i^2\} \\
+            \quad \assigns{s}{s + (2 * i + 1)}; & \{i < n \wedge s = i^2 + (2*i + 1)\} \Rightarrow \{i < n \wedge s = (i + 1)^2 \}\\
+            \quad \assigns{i}{i + \consts{1}} & \{i < n + 1 \wedge s = i^2\} \Rightarrow \{i \leq n \wedge s = i^2\} \\
+            \} & \{i \geq n \wedge i \leq n \wedge s = i^2\} \Rightarrow \{s = n^2\}
+        \end{array}
+    \]
+\end{task}
+
+\begin{task}[Written, 5 points]
+    \[
+        \begin{array}{l l}
+            & \{n \leq 0\} \\
+            \assigns{i}{\consts{0}}; & \{n \leq 0\ \wedge i = 0\} \\
+            \assigns{s}{\consts{0}}; & \{n \leq 0 \wedge i = 0 \wedge s = 0\} \\
+            \inv{i \leq n \wedge s = i^2} & \\
+            \whiles{i < n}& \{i < n \wedge i \leq n \wedge s = i^2\} \Rightarrow \{i < n \wedge s = i^2\} \\
+            \quad \assigns{s}{s + (2 * i)}; & \{i < n \wedge s = i^2 + (2*i)\} \Rightarrow \{i < n \wedge s = (i + 1)^2 - 1 \} \\
+            \quad \assigns{i}{i + \consts{1}} & \{i < n + 1 \wedge s = i^2 - 1\} \Rightarrow \{i \leq n \wedge s < i^2 \} \\
+            \} & \{s = n^2\}
+        \end{array}
+    \]
+    We know that $\{i \leq n \wedge s < i^2\} \not \Rightarrow
+    \{i \leq n \wedge s = i^2\}$. Thus the logic obligation after assigning new
+    value to $i$ cannot be proven and the loop invariant does not hold at the end
+    of each loop. The program is incorrect.
+\end{task}
+
+\section{Proofs with Loops}
+
+\begin{task}[Programming, 8 points]\
+    \[
+        \begin{array}{l l}
+            & \{T\} \\
+            \assigns{i}{\consts{0}}; & \\
+            \assigns{s}{\consts{0}}; & \\
+            \inv{i \leq |a| \wedge s = sumA(a, 0, i)} & \\
+            \whiles{i < |a|} & \\
+            \quad \assigns{s}{s + a[i]}; & \\
+            \quad \assigns{i}{i + \consts{1}} & \\
+            \} & \{s = sumA(a, 0, |a|)\}
+        \end{array}
+    \]
+
+    \vspace{1em}
+    Dafny code of the program in \texttt{sumarray.dfy}:
+    \lstinputlisting{prog/sumarray.dfy}
+\end{task}
+
+\begin{task}[Programming, 12 points]\
+    \begin{enumerate}
+        \item \textbf{Postcondition:} $(i < |a| \rightarrow a[i] > x \wedge (\forall
+            j. 0 \leq j \wedge j < i \rightarrow a[j] \leq x)) \wedge
+            (i = |a| \rightarrow (\forall j. 0 \leq j \wedge j < |a| \rightarrow a[j]
+            \leq x))$
+        \item Program and proof outline:
+            \[
+                \begin{array}{l l}
+                    & \{T\} \\
+                    \assigns{i}{\consts{0}}; & \\
+                    \inv{i \leq |a| \wedge (\forall j. 0 \leq j \wedge j < i \rightarrow a[j] \leq x)} & \\
+                    \whiles{i < |a| \wedge a[i] \leq x} & \\
+                    \quad \assigns{i}{i + \consts{1}} & \\
+                    \} & \{(i < |a| \rightarrow a[i] > x \wedge (\forall j. 0 \leq j \wedge j < i \rightarrow a[j] \leq x)) \\
+                       & \wedge (i = |a| \rightarrow (\forall j. 0 \leq j \wedge j < |a| \rightarrow a[j] \leq x))\}
+                \end{array}
+            \]
+
+            \vspace{1em}
+            Dafny code of the program in \texttt{find.dfy}:
+            \lstinputlisting{prog/find.dfy}
+    \end{enumerate}
+\end{task}
+
+\begin{task}[Programming, 12 points]
+    \[
+        \begin{array}{l l}
+            & \{T\} \\
+            \assigns{i}{\consts{0}}; & \\
+            \assigns{n}{\consts{0}}; & \\
+            \assigns{p}{\consts{0}}; & \\
+            \inv{i \leq |a| \wedge p = numPos(a, 0, i) \wedge n = numNeg(a, 0, i)} & \\
+            \whiles{i < |a|} & \\
+            \quad \ifs{a[i] > \consts{0}}{\assigns{p}{p + \consts{1}}}{\skips}; & \\
+            \quad \ifs{a[i] < \consts{0}}{\assigns{n}{n + \consts{1}}}{\skips}; & \\
+            \quad \assigns{i}{i + \consts{1}} \\
+            \} & \\
+            \assigns{e}{n = p} & \{e \rightarrow numPos(a, 0, |a|) = numNeg(a, 0, |a|)\}
+        \end{array}
+    \]
+
+    \vspace{1em}
+    Dafny code of the program in \texttt{posneg.dfy}:
+    \lstinputlisting{prog/posneg.dfy}
+\end{task}
+
+\section{Weakest Preconditions with Array Assignments}
+
+\begin{task}[Written, 6 points]\
+    \begin{enumerate}
+        \item
+            $
+            \!
+            \begin{aligned}[t]
+                \wlp{\assigns{a[\cond{x = 0}{i}{j}]}{\consts{1}}}{a[i] = 1}
+                &= [1/a[\cond{x=0}{i}{j}]](a[i] = 1) \\
+                &= \cond{((\cond{x=0}{i}{j}) = i)}{(1 = 1)}{(a[i] = 1)} \\
+                &= \cond{((\cond{x=0}{i}{j}) = i)}{T}{(a[i] = 1)} \\
+                &= \cond{(\cond{x=0}{i = i}{j = i})}{T}{(a[i] = 1)} \\
+                &= \cond{(\cond{x=0}{T}{j=i})}{T}{(a[i] = 1)} \\
+                &= \cond{(x=0 \vee j=i)}{T}{(a[i] = 1)} \\
+                &= (x=0 \vee j=i) \vee (a[i] = 1) \\
+                &= (x=0) \vee (j=i) \vee (a[i] = 1)
+            \end{aligned}
+            $
+        \item
+            $
+            \!
+            \begin{aligned}[t]
+                \wlp{\assigns{a[i]}{\consts{5}}}{a[a[1]] = 5}
+                &= [5/a[i]](a[a[1]] = 5) \\
+                &= \cond{(e = i)}{5 = 5}{a[e] = 5} \qquad \text{where $e = [5/a[i]](a[1]) = \cond{(i = 1)}{5}{a[1]}$} \\
+                &= \cond{(e = i)}{T}{a[e] = 5} \\
+                &= (e = i) \vee (a[e] = 5) \\
+                &= ((\cond{(i=1)}{5}{a[1]}) = i) \vee ((a[\cond{(i=1)}{5}{a[1]}]) = 5) \\
+                &= (\cond{(i=1)}{5=i}{a[1]=i}) \vee (\cond{(i=1)}{a[5]}{a[a[1]]} = 5) \\
+                &= (i \neq 1 \wedge a[1] = i) \vee (\cond{(i=1)}{a[5] = 5}{a[a[1]] = 5}) \\
+                &= (i \neq 1 \wedge a[1] = i) \vee ((i = 1 \rightarrow a[5] = 5) \wedge (i \neq 1 \rightarrow a[a[1]] = 5))
+            \end{aligned}
+            $
+        \item
+            $
+            \!
+            \begin{aligned}[t]
+                \wlp{\assigns{a[j]}{a[i] + 1}}{a[j] > a[i]}
+                &= [a[i]+1/a[j]](a[j] > a[i]) \\
+                &= [a[i]+1/a[j]](a[j]) > [a[i]+1/a[j]](a[i]) \\
+                &= a[i] + 1 > (\cond{i=j}{a[i] + 1}{a[i]}) \\
+                &= \cond{i=j}{a[i] + 1 > a[i] + 1}{a[i] + 1 > a[i]} \\
+                &= \cond{i=j}{F}{T} \\
+                &= i \neq j
+            \end{aligned}
+            $
+    \end{enumerate}
+\end{task}
+
+\section{One more wrap-up question}
+
+\wrapup{5}{2}
+
+\end{document}
